@@ -34,6 +34,8 @@ from pyndn import Name
 from pyndn import Face
 from pyndn import Interest
 from pyndn import Data
+from pyndn.util import SegmentFetcher
+import timeit
 
 try:
     WindowsError
@@ -58,11 +60,12 @@ Version = ""
 class Counter(object):
     def __init__(self):
         self._callbackCount = 0
-    def onComplete(content):
+    def onComplete(self, content):
     	self._callbackCount += 1
     	print "Found content"
-        Content = content
-    def onError(errorCode, message):
+	global Content
+        Content = content.toRawStr()
+    def onError(self, errorCode, message):
     	self._callbackCount += 1
         print "Error retreiving all segments"
         print errorCode
@@ -70,8 +73,9 @@ class Counter(object):
     def onData(self, interest, data):
         self._callbackCount += 1
         dump("Got data packet with name", data.getName().toUri())
-    	Version = data.getName().get(-1)
-    	dump("Version extracted", Version)
+	global Version
+	Version = '/'+str(data.getName().get(-1))
+    	#dump("Version extracted", Version)
     def onTimeout(self, interest):
         self._callbackCount += 1
         dump("Time out for interest", interest.getName().toUri())
@@ -97,26 +101,25 @@ def dump(*list):
 def get_mpd_ndn(url):
     """ Module to download the MPD from the URL and save it to file"""
     print 'Entered get mpd ndn'
-    face = Face("server.ndnAstream.ch-geni-net.instageni.gpolab.bbn.com")
+    face = Face("server.simpleNDN.ch-geni-net.geni.case.edu")
     counter = Counter()
     
     try:
     	name = Name(url)
-    	dump("Express name ", name.toUri())
     	face.expressInterest(name, counter.onData, counter.onTimeout)
-		while counter._callbackCount < 1:
-			face.processEvents()
+	while counter._callbackCount < 1:
+		face.processEvents()
     	# Try to fetch using a known name.
     	name = Name(url+Version)
     	dump("Express name ", name.toUri())
-    	interest = Interest(name)
+	interest = Interest(name)
     	interest.setInterestLifetimeMilliseconds(1000)
-    	SegmentFetcher.fetch(face, interest, None, counter.onComplete, counter.onError)
+	SegmentFetcher.fetch(face, interest, None, counter.onComplete, counter.onError)
     except:
         config_dash.LOG.error("Unable to download MPD file NDN error") 
         return None
     while counter._callbackCount < 2:
-			face.processEvents()
+	face.processEvents()
     mpd_data = Content
     mpd_file = url.split('/')[-1]
     mpd_file_handle = open(mpd_file, 'w')
@@ -151,15 +154,15 @@ def id_generator(id_size=6):
 def download_segment_ndn(segment_url, dash_folder):
     """ Module to download the segment """
     print 'Entered download segment ndn'
-    face = Face("server.ndnAstream.ch-geni-net.instageni.gpolab.bbn.com")
+    face = Face("server.simpleNDN.ch-geni-net.geni.case.edu")
     counter = Counter()
     
     try:
     	name = Name(segment_url)
     	dump("Express name ", name.toUri())
     	face.expressInterest(name, counter.onData, counter.onTimeout)
-		while counter._callbackCount < 1:
-			face.processEvents()
+	while counter._callbackCount < 1:
+		face.processEvents()
     	# Try to fetch using a known name.
     	name = Name(segment_url+Version)
     	dump("Express name ", name.toUri())
@@ -170,7 +173,7 @@ def download_segment_ndn(segment_url, dash_folder):
         config_dash.LOG.error("Unable to download MPD file NDN error") 
         return None
     while counter._callbackCount < 2:
-			face.processEvents()
+	face.processEvents()
     
     parsed_uri = urlparse.urlparse(segment_url) 
     segment_path = '{uri.path}'.format(uri=parsed_uri) 
@@ -528,7 +531,9 @@ def main():
         return None
     config_dash.LOG.info('Downloading MPD file %s' % MPD)
     # Retrieve the MPD files for the video
+    start_time = timeit.default_timer()
     mpd_file = get_mpd_ndn(MPD)
+    print("time taken to download this file:"+ str(timeit.default_timer() - start_time))
     domain = get_domain_name(MPD)
     dp_object = DashPlayback()
     # Reading the MPD file created
