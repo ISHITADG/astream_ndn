@@ -26,6 +26,7 @@ Nfd-start
 nfdc register /ndn/broadcast/ndnfs udp://server.simpleNDN.ch-geni-net.geni.case.edu
 ./build/test-client
 show /ndn/broadcast/ndnfs/BigBuckBunny_4s_simple_2014_05_09.mpd
+NOTE: NDNFS fetch application is faulty. If show command works, your file should be succesfully fetched using the AStream dashndnclient application.
 ****************************************************************************************************************************
 TEST (ndn version of Astream works)
 AT NDN REMOTE CLIENT: 
