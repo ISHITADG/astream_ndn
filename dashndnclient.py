@@ -103,7 +103,7 @@ def get_mpd_ndn(url):
     print 'Entered get mpd ndn'
     face = Face("server.simpleNDN.ch-geni-net.geni.case.edu")
     counter = Counter()
-    
+    s = time.clock()
     try:
     	name = Name(url)
     	face.expressInterest(name, counter.onData, counter.onTimeout)
@@ -120,6 +120,7 @@ def get_mpd_ndn(url):
         return None
     while counter._callbackCount < 2:
 	face.processEvents()
+    print("time taken to copy all segments:"+ str(time.clock() - s))
     mpd_data = Content
     mpd_file = url.split('/')[-1]
     mpd_file_handle = open(mpd_file, 'w')
@@ -531,9 +532,9 @@ def main():
         return None
     config_dash.LOG.info('Downloading MPD file %s' % MPD)
     # Retrieve the MPD files for the video
-    start_time = timeit.default_timer()
+    start_time = time.clock()
     mpd_file = get_mpd_ndn(MPD)
-    print("time taken to download this file:"+ str(timeit.default_timer() - start_time))
+    print("time taken to download this file:"+ str(time.clock() - start_time))
     domain = get_domain_name(MPD)
     dp_object = DashPlayback()
     # Reading the MPD file created
